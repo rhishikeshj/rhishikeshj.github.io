@@ -3,10 +3,10 @@
 # ----------------------- #
 
 url: http://rhishikeshj.github.io
-title: My Octopress Blog
-subtitle: A blogging framework for hackers.
-author: Your Name
-simple_search: https://www.google.com/search
+title: Curious Polyglot
+subtitle: A blog about my learnings as a developer.
+author: Rhishikesh Joshi
+simple_search: http://www.twitter.com/rhishikeshj
 description:
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
@@ -70,7 +70,7 @@ github_show_profile_link: true
 github_skip_forks: true
 
 # Twitter
-twitter_user:
+twitter_user: rhishikeshj
 twitter_tweet_button: true
 
 # Google +1
