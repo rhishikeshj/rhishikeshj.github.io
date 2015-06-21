@@ -9,7 +9,8 @@
   <meta name="author" content="Rhishikesh Joshi">
 
   
-  <meta name="description" content=" Blog Archives Recent Posts ">
+  <meta name="description" content="Background j2ObjC is a transpiler written and maintained by Google.
+It compiles java code to equivalent ObjectiveC code to enable mobile developers &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -67,6 +68,220 @@
       <div class="blog-index">
   
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/06/17/j2objc-setup/">Setting Up j2ObjC for Xcode</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2015-06-17T00:00:00+05:30'><span class='date'><span class='date-month'>Jun</span> <span class='date-day'>17</span><span class='date-suffix'>th</span>, <span class='date-year'>2015</span></span> <span class='time'>12:00 am</span></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><h2>Background</h2>
+
+<p><a href="http://www.j2objc.org">j2ObjC</a> is a transpiler written and maintained by Google.
+It compiles java code to equivalent ObjectiveC code to enable mobile developers share common code between their Android and iOS apps. Google already uses this project internally to power production apps like Inbox so we know it is ready for prime time usage.</p>
+
+<h2>Motivation</h2>
+
+<h3>Code sharing</h3>
+
+<p>In any meaningful mobile app, there is a chunk of code which relates to the business domain and storing, retrieving and manipulating that data. All of this code is basically the same irrespective of what platform you are writing the app for. This is where we should take advantage of such a tool.</p>
+
+<h3>Quicker time to market</h3>
+
+<p>Sharing such code between your iOS and Android app will help you reduce development time and increase stability of code.</p>
+
+<h3>Leveraging the plethora of Java open-source libraries</h3>
+
+<p>There are tons of open source Java projects which can be used very effectively even in an Android application. Projects like Google&rsquo;s Guava can be very useful in developing an Android application. Imagine if you could use all of those features in your iOS library without writing much code.</p>
+
+<h3>Better abstractions</h3>
+
+<p>Personally I feel that using this tool will also help you identify the parts of the code which is independent of the platform and hide the platform dependent code behind meaningful abstractions.</p>
+
+<h2>Getting started</h2>
+
+<ol>
+<li>Download the built archives from the <a href="https://github.com/google/j2objc/releases">release page</a> or compile from <a href="https://github.com/google/j2objc">source</a></li>
+<li>Make sure the binaries are on the <strong>$PATH</strong></li>
+</ol>
+
+
+<h2>Setup options</h2>
+
+<p>The main hurdle behind using such tools is that they tend not to integrate well with your regular workflows. But with j2ObjC, we have a multitude of options when it comes to integrating this tool with your day to day projects.
+The main ways in which you can use j2ObjC are</p>
+
+<ol>
+<li>Using j2ObjC&rsquo;s Gradle plugin.</li>
+<li>Using j2ObjC with Xcode build rules.</li>
+<li>Using j2ObjC with Xcode and External Build.</li>
+<li>Using the JRE Emulation project with Xcode.</li>
+</ol>
+
+
+<p>The <a href="https://github.com/brunobowden/j2objc-gradle">Gradle plugin</a> is still under development and keeps updating the structure and way things are to be setup. They are doing great work but since it is still unstable, in this post I will explain the one which I found to be most convenient and easy to setup, namely via <code>Xcode with Build rules</code></p>
+
+<h2>Setting up XCode for j2ObjC</h2>
+
+<p>To setup Xcode for building your java source files, follow the below steps.</p>
+
+<ol>
+<li><p>Determine $source-root for your code. The root directory is the directory that contains the top package of your source files. For example, if you have a Java package <em>foo.bar</em> in a directory called <em>~/myproject/src</em>, that package&rsquo;s Java files should be in <em>~/myproject/src/foo/bar/**.java</em>. That means <em>~/myproject/src</em> is the root directory for your project.</p></li>
+<li><p>Add the java source files to your Xcode project, typically by dragging them into the project and selecting the appropriate targets. <strong>Do not</strong> select <code>Copy Files</code></p></li>
+<li><p>Go to the <code>Build Rules</code> section and add a new section for processing Java source files. Select <code>Custom script</code> to run on each Java file.</p>
+
+<pre><code class="`"> $distribution-path/j2objc -d ${DERIVED_FILES_DIR} -sourcepath ${PROJECT_DIR}/$source-root \
+ --no-package-directories ${INPUT_FILE_PATH};
+</code></pre></li>
+<li><p>Output files</p>
+
+<pre><code class="`"> ${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.m
+ ${DERIVED_FILES_DIR}/${INPUT_FILE_BASE}.h
+</code></pre></li>
+<li><p>Build settings</p>
+
+<p> <strong>User Header Search Paths</strong></p>
+
+<pre><code class="`"> ${HOME}/path-to/j2objc/dist/include ${DERIVED_FILES_DIR
+</code></pre>
+
+<p> <strong>Library Search Paths</strong></p>
+
+<pre><code class="`"> ${HOME}/path-to/j2objc/dist/lib
+</code></pre>
+
+<p> <strong>Other Linker Flags</strong></p>
+
+<pre><code class="`"> -ljre_emul
+ -ObjC
+</code></pre>
+
+<p> <strong>Required Frameworks</strong></p>
+
+<pre><code class="`"> libz.dylib
+ icucore
+ Security.framework
+</code></pre></li>
+</ol>
+
+
+<p>Once all of the steps are done, your <code>Build Rules</code> section should look something like this</p>
+
+<p><img src="/images/j2objc-build-rules.png" alt="" /></p>
+
+<h2>A typical project structure</h2>
+
+<p>Let us now discuss a typical project structure which can help you get started quickly with using j2ObjC.</p>
+
+<ol>
+<li><p>In your Android project, add a Java library as a subproject and dependency. For example, if your java library is called <code>javatree</code>, your <code>build.gradle</code> should look like this</p>
+
+<pre><code class="`"> dependencies {
+     compile project(':javatree')
+     compile fileTree(dir: 'libs', include: ['*.jar'])
+     compile 'com.android.support:appcompat-v7:22.1.0'
+ }
+</code></pre></li>
+<li><p>Add all the platform independent, Java only code in this library and use as required from your Android project. Typical candidates to go into this library would be your business models, your DB interfaces and your util classes.</p></li>
+<li><p>Add the <code>java</code> folder from your <code>src/main</code> to your Xcode project.</p></li>
+<li><p>Modify the <code>Build Rule</code> custom script to point to the <code>src/main/java</code> folder of your java lib.</p></li>
+<li><p>Start coding!</p></li>
+</ol>
+
+
+<h2>Additional configurations</h2>
+
+<h3>Naming conventions</h3>
+
+<p>By default the j2ObjC tools follows a naming convention where your package name in Java code translates to a camel-cased prefix for your class. For example, <em>com.helpshift.common.storage.KeyValueStorage.java</em> would become <em>ComHelpshiftCommonStorageKeyValueStorage.h/m</em>. If that is a convention you don&rsquo;t like, or you want your names to be a bit more predictable, you can use the <code>--prefix/--prefixes</code> option of the j2objc tool.</p>
+
+<p>For example, to change the prefix for all classes in the <em>com.helpshift.common.storage</em> package, you would do</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>--prefix com.helpshift.common.storage=HSStorage</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Or you could specify a list of such package name prefixes in a prefixes.properties file and specify the file as an argument to <em>&ndash;prefixes</em></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>--prefixes path-to/prefixes.properties</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Method renaming</h3>
+
+<p>The default naming convention followed when converting Java function signatures to ObjC functions is to append the type of the variable to the method name. For example, <em>public static String toString(byte[] bytes)</em> becomes <em>+ (NSString </em>)toStringWithByteArray:(IOSByteArray <em>)bytes;</em></p>
+
+<p>If this is not to your liking or you want to have similar names in your ObjC code, you can use the method renaming annotations or the <code>--mapping</code> command line option to the j2objc tool.</p>
+
+<h4>Annotations</h4>
+
+<p>j2objc provides some built-in annotations. One of them is the <em>@ObjectiveCName</em> annotatation available in the <em>com.google.j2objc.annotations.ObjectiveCName;</em> package.</p>
+
+<p>For example</p>
+
+<pre><code>java
+@ObjectiveCName(value = "setKey:withObject:")
+void set(String key, Object value);
+
+objc
+- (void)setKey:(NSString *)key withObject:(id)value;
+</code></pre>
+
+<h4>Mapping</h4>
+
+<p>Similar to the <code>prefix</code> option, you can provide the <code>mapping</code> option to the j2objc tool. This option takes a method signature defined by the <a href="http://docs.oracle.com/javase/specs/jvms/se7/html/jvms-4.html#jvms-4.3.4">Java Virtual Machine Specification</a> and its required translation.</p>
+
+<p>For example</p>
+
+<pre><code>org.helpshift.common.storage.KeyValueStorage.set(Ljava/lang/String;Ljava/io/Serializable)V = set:withObject:
+org.helpshift.common.storage.KeyValueStorage.get(Ljava/lang/String;)Ljava/lang/Object = objectForKey:
+</code></pre>
+
+<p>I would highly recommend using the Annotations option since it is much more readable and works more reliably.</p>
+
+<h3>Inline native code</h3>
+
+<p>J2objc supports embedding native ObjC code within your java sources. All code which lies within <code>/*-[</code> and <code>]-*/</code> will be copied as is into the generated ObjC files. Since this code is commented from Java&rsquo;s perspective, it will ofcourse be ignored by the Java compiler.</p>
+
+<p>For example, to write a method which calls out to the ObjC code directly you could do this</p>
+
+<pre><code>native public static KeyValueDbStorage getInstance() /*-[
+  return [HsKeyValueBundleStorage getInstance];
+]-*/;
+</code></pre>
+
+<h2>Conclusion</h2>
+
+<p>If you follow the above steps, you will definitely be able to get up and running with a Java and ObjC project with a lot common code. If you have any difficulties in setting things up, please leave a comment.</p>
+
+<h2>Next steps</h2>
+
+<ol>
+<li>I am trying to write a python script which will make all the settings changes in Xcode in one shot which will help reduce the time and effort to set things up.</li>
+<li>I will also be publishing a simple project which demonstrate how a typical almost-real world application can look like.</li>
+</ol>
+
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
     <a href="/blog/archives">Blog Archives</a>
@@ -79,7 +294,40 @@
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
     
+      <li class="post">
+        <a href="/blog/2015/06/17/j2objc-setup/">Setting Up j2ObjC for Xcode</a>
+      </li>
+    
   </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/rhishikeshj">@rhishikeshj</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'rhishikeshj',
+            count: 0,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
 </section>
 
 
